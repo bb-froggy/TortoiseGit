@@ -355,22 +355,26 @@ CCachedDirectory * CGitStatusCache::GetDirectoryCacheEntry(const CTGitPath& path
 		// that means that path got invalidated and needs to be treated
 		// as if it never was in our cache. So we remove the last remains
 		// from the cache and start from scratch.
-		AssertLock();
-		if (!IsWriter())
-		{
-			// upgrading our state to writer
-			ATLTRACE("trying to upgrade the state to \"Writer\"\n");
-			Done();
-			ATLTRACE("Returned \"Reader\" state\n");
-			WaitToWrite();
-			ATLTRACE("Got \"Writer\" state now\n");
-		}
+		//AssertLock();
+		//if (!IsWriter())
+		//{
+		//	// upgrading our state to writer
+		//	ATLTRACE("trying to upgrade the state to \"Writer\"\n");
+		//	Done();
+		//	ATLTRACE("Returned \"Reader\" state\n");
+		// WaitToWrite();
+		//	ATLTRACE("Got \"Writer\" state now\n");
+		//}
 		// Since above there's a small chance that before we can upgrade to
 		// writer state some other thread gained writer state and changed
 		// the data, we have to recreate the iterator here again.
+
+		WaitToWrite();
 		itMap = m_directoryCache.find(path);
 		if (itMap!=m_directoryCache.end())
 			m_directoryCache.erase(itMap);
+		this->Done();
+
 		// We don't know anything about this directory yet - lets add it to our cache
 		// but only if it exists!
 		if (path.Exists() && m_shellCache.IsPathAllowed(path.GetWinPath()) && !g_GitAdminDir.IsAdminDirPath(path.GetWinPath()))
@@ -387,7 +391,10 @@ CCachedDirectory * CGitStatusCache::GetDirectoryCacheEntry(const CTGitPath& path
 				CCachedDirectory * newcdir = new CCachedDirectory(path);
 				if (newcdir)
 				{
+					WaitToWrite();
 					CCachedDirectory * cdir = m_directoryCache.insert(m_directoryCache.lower_bound(path), std::make_pair(path, newcdir))->second;
+					Done();
+
 					CString gitdir;
 					if ((!path.IsEmpty())&&(path.HasAdminDir(&gitdir))&&isAddToWatch)
 					{
@@ -411,6 +418,7 @@ CCachedDirectory * CGitStatusCache::GetDirectoryCacheEntry(const CTGitPath& path
 				m_bClearMemory = true;
 			}
 		}
+		
 		return NULL;
 	}
 }
@@ -445,11 +453,9 @@ CStatusCacheEntry CGitStatusCache::GetStatusForPath(const CTGitPath& path, DWORD
 		}
 	}
 
-	this->WaitToRead(2000);
 	m_mostRecentPath = path;
 	m_mostRecentExpiresAt = now+1000;
-	this->Done();
-
+	
 	if (IsPathGood(path))
 	{
 		// Stop the crawler starting on a new folder while we're doing this much more important task...
@@ -460,10 +466,8 @@ CStatusCacheEntry CGitStatusCache::GetStatusForPath(const CTGitPath& path, DWORD
 		if ((dirpath.IsEmpty()) || (!m_shellCache.IsPathAllowed(dirpath.GetWinPath())))
 			dirpath = path.GetDirectory();
 		
-		this->WaitToRead(2000);
 		CCachedDirectory *cachedDir = GetDirectoryCacheEntry(dirpath);
-		this->Done();
-
+		
 		if (cachedDir != NULL)
 		{
 			m_mostRecentStatus = cachedDir->GetStatusForMember(path, bRecursive, bFetch);
@@ -471,13 +475,13 @@ CStatusCacheEntry CGitStatusCache::GetStatusForPath(const CTGitPath& path, DWORD
 		}
 	}
 	ATLTRACE(_T("ignored no good path %s\n"), path.GetWinPath());
-	this->WaitToRead(2000);
+	
 	m_mostRecentStatus = CStatusCacheEntry();
 	if (m_shellCache.ShowExcludedAsNormal() && path.IsDirectory() && m_shellCache.HasSVNAdminDir(path.GetWinPath(), true))
 	{
 		m_mostRecentStatus.ForceStatus(git_wc_status_normal);
 	}
-	this->Done();
+	
 	return m_mostRecentStatus;
 }
 
