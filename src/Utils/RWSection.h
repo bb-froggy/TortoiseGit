@@ -32,6 +32,7 @@ public:
 	bool WaitToWrite(DWORD waitTime = INFINITE);
 	void Done();
 	bool IsWriter() {return ((m_nWaitingWriters > 0) || (m_nActive < 0));}
+	bool IsRead() {return m_nActive>=0; }
 #if defined (DEBUG) || defined (_DEBUG)
 	void AssertLock() {ATLASSERT(m_nActive);}
 	void AssertWriting() {ATLASSERT((m_nWaitingWriters || (m_nActive < 0)));}

@@ -528,7 +528,10 @@ CStatusCacheEntry CCachedDirectory::GetStatusForMember(const CTGitPath& path, bo
 
 	if (path.IsDirectory())
 	{
+		CGitStatusCache::Instance().WaitToRead();
 		CCachedDirectory * dirEntry = CGitStatusCache::Instance().GetDirectoryCacheEntry(path);
+		CGitStatusCache::Instance().Done();
+
 		if ((dirEntry)&&(dirEntry->IsOwnStatusValid()))
 		{
 			/// status should be valid, needn't add to crawl.
@@ -679,8 +682,9 @@ BOOL CCachedDirectory::GetStatusCallback(CString & path, git_wc_status_kind stat
 	status2->prop_status = status2->text_status = status;
 
 	CTGitPath gitPath;
-
-
+   
+	
+	
 //	if(status->entry)
 	{
 		//if ((status->text_status != git_wc_status_none)&&(status->text_status != git_wc_status_missing))
@@ -728,8 +732,10 @@ BOOL CCachedDirectory::GetStatusCallback(CString & path, git_wc_status_kind stat
 					// the child directory is not in the cache. Create a new entry for it in the cache which is
 					// initially 'unversioned'. But we added that directory to the crawling list above, which
 					// means the cache will be updated soon.
+					CGitStatusCache::Instance().WaitToRead();
 					CGitStatusCache::Instance().GetDirectoryCacheEntry(gitPath);
-				
+					CGitStatusCache::Instance().Done();
+
 					pThis->m_childDirectories[gitPath] = s;
 					ATLTRACE(_T("call 2 Update dir %s %d\n"), gitPath.GetWinPath(), s);
 				}

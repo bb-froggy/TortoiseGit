@@ -489,16 +489,16 @@ VOID GetAnswerToRequest(const TSVNCacheRequest* pRequest, TSVNCacheResponse* pRe
 		path.SetFromWin(pRequest->path);
 	}
 
-	if (CGitStatusCache::Instance().WaitToRead(2000))
-	{
+	//if (CGitStatusCache::Instance().WaitToRead(2000))
+	//{
 		CGitStatusCache::Instance().GetStatusForPath(path, pRequest->flags, false).BuildCacheResponse(*pReply, *pResponseLength);
-		CGitStatusCache::Instance().Done();
-	}
-	else
-	{
-		CStatusCacheEntry entry;
-		entry.BuildCacheResponse(*pReply, *pResponseLength);
-	}
+	//	CGitStatusCache::Instance().Done();
+	//}
+	//else
+	//{
+	//	CStatusCacheEntry entry;
+	//	entry.BuildCacheResponse(*pReply, *pResponseLength);
+	//}
 }
 
 DWORD WINAPI PipeThread(LPVOID lpvParam)

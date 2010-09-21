@@ -444,8 +444,11 @@ CStatusCacheEntry CGitStatusCache::GetStatusForPath(const CTGitPath& path, DWORD
 			return m_mostRecentStatus;
 		}
 	}
+
+	this->WaitToRead(2000);
 	m_mostRecentPath = path;
 	m_mostRecentExpiresAt = now+1000;
+	this->Done();
 
 	if (IsPathGood(path))
 	{
@@ -456,7 +459,11 @@ CStatusCacheEntry CGitStatusCache::GetStatusForPath(const CTGitPath& path, DWORD
 		CTGitPath dirpath = path.GetContainingDirectory();
 		if ((dirpath.IsEmpty()) || (!m_shellCache.IsPathAllowed(dirpath.GetWinPath())))
 			dirpath = path.GetDirectory();
-		CCachedDirectory * cachedDir = GetDirectoryCacheEntry(dirpath);
+		
+		this->WaitToRead(2000);
+		CCachedDirectory *cachedDir = GetDirectoryCacheEntry(dirpath);
+		this->Done();
+
 		if (cachedDir != NULL)
 		{
 			m_mostRecentStatus = cachedDir->GetStatusForMember(path, bRecursive, bFetch);
@@ -464,11 +471,13 @@ CStatusCacheEntry CGitStatusCache::GetStatusForPath(const CTGitPath& path, DWORD
 		}
 	}
 	ATLTRACE(_T("ignored no good path %s\n"), path.GetWinPath());
+	this->WaitToRead(2000);
 	m_mostRecentStatus = CStatusCacheEntry();
 	if (m_shellCache.ShowExcludedAsNormal() && path.IsDirectory() && m_shellCache.HasSVNAdminDir(path.GetWinPath(), true))
 	{
 		m_mostRecentStatus.ForceStatus(git_wc_status_normal);
 	}
+	this->Done();
 	return m_mostRecentStatus;
 }
 

@@ -441,6 +441,7 @@ void CFolderCrawler::WorkerThread()
 				CGitStatusCache::Instance().WaitToRead();
 				// Now, we need to visit this folder, to make sure that we know its 'most important' status
 				CCachedDirectory * cachedDir = CGitStatusCache::Instance().GetDirectoryCacheEntry(workingPath.GetDirectory());
+				CGitStatusCache::Instance().Done();
 				// check if the path is monitored by the watcher. If it isn't, then we have to invalidate the cache
 				// for that path and add it to the watcher.
 				if (!CGitStatusCache::Instance().IsPathWatched(workingPath))
@@ -476,7 +477,7 @@ void CFolderCrawler::WorkerThread()
 					}
 				}
 #endif
-				CGitStatusCache::Instance().Done();
+				
 			}
 		}
 	}

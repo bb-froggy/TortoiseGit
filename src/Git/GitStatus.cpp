@@ -944,10 +944,17 @@ int GitStatus::GetFileStatus(CString &gitdir,CString &path,git_wc_status_kind * 
 			if( st == git_wc_status_normal && IsFull)
 			{
 				{
-					CAutoReadLock(&g_HeadFileMap[gitdir].m_SharedMutex);
+					int ret=g_HeadFileMap.CheckHeadUpdate(gitdir);
+					bool b=false;
 
-					if(g_HeadFileMap[gitdir].CheckHeadUpdate() || 
-						g_HeadFileMap[gitdir].m_Head != g_HeadFileMap[gitdir].m_TreeHash)
+					CAutoReadLock lock(&g_HeadFileMap.m_SharedMutex);
+					
+					{
+						CAutoReadLock lock(&g_HeadFileMap[gitdir].m_SharedMutex);
+						b = g_HeadFileMap[gitdir].m_Head != g_HeadFileMap[gitdir].m_TreeHash;
+					}
+
+					if(ret || b)
 					{
 						g_HeadFileMap[gitdir].ReadHeadHash(gitdir);
 						// Init Repository
@@ -971,6 +978,8 @@ int GitStatus::GetFileStatus(CString &gitdir,CString &path,git_wc_status_kind * 
 					}
 					// Check Head Tree Hash;
 					{
+						CAutoReadLock lock(&g_HeadFileMap[gitdir].m_SharedMutex);
+
 						//add item
 						std::map<CString,int>::iterator it=g_HeadFileMap[gitdir].m_Map.find(path);
 
